@@ -1,4 +1,5 @@
 ﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace BarelyFunctional;
 
