@@ -6,6 +6,16 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 {
     private T? Value { get; }
 
+    public IEnumerable<Error> Errors { get; } = [];
+
+    public bool IsSuccess { get; }
+
+    public bool IsFailure =>
+        !IsSuccess;
+
+    public Error? Error =>
+        Errors?.FirstOrDefault();
+
 
     private Outcome(T? value, IEnumerable<Error> errors, bool isSuccess)
     {
@@ -14,6 +24,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         IsSuccess = isSuccess;
     }
 
+    #region Initialization
 
     public static Outcome<T> Success(T value)
     {
@@ -54,6 +65,34 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     public static Outcome<TResult> Failure<TResult>(IEnumerable<Error>? errors) =>
         new(default, errors ?? [], false);
 
+    public static Outcome<T> Of(Func<T> transform)
+    {
+        try
+        {
+            var result = transform();
+
+            return Success(result);
+        }
+        catch (Exception exception)
+        {
+            return Failure(Error.FromException(exception));
+        }
+    }
+
+
+    public static Outcome<Unit> Of(Action action)
+    {
+        try
+        {
+            action();
+            return new Unit();
+        }
+        catch (Exception exception)
+        {
+            return Error.FromException(exception);
+        }
+    }
+
 
     public static implicit operator Outcome<T>(Error error) =>
         Failure(error);
@@ -68,17 +107,9 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
             ? outcome.Value!
             : throw new InvalidCastException("Outcome is not in a success state!");
 
+    #endregion
 
-    public IEnumerable<Error> Errors { get; } = [];
-
-    public bool IsSuccess { get; }
-
-    public bool IsFailure =>
-        !IsSuccess;
-
-    public Error? Error =>
-        Errors?.FirstOrDefault();
-
+    #region Methods
 
     public Outcome<TResult> Select<TResult>(Func<T, TResult> transform)
     {
@@ -125,35 +156,6 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     }
 
 
-    public static Outcome<T> Of(Func<T> transform)
-    {
-        try
-        {
-            var result = transform();
-
-            return Success(result);
-        }
-        catch (Exception exception)
-        {
-            return Failure(Error.FromException(exception));
-        }
-    }
-
-
-    public static Outcome<Unit> Of(Action action)
-    {
-        try
-        {
-            action();
-            return new Unit();
-        }
-        catch (Exception exception)
-        {
-            return Error.FromException(exception);
-        }
-    }
-
-
     public TResult Match<TResult>(Func<T, TResult> success, Func<Error, TResult> failure) =>
         IsFailure ? failure(Error!) : success(Value!);
 
@@ -169,6 +171,9 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     public T? GetValueOrDefault() =>
         IsSuccess ? Value : default;
 
+    #endregion
+
+    #region Equality
 
     public bool Equals(Outcome<T> other) =>
         EqualityComparer<T?>.Default.Equals(Value, other.Value)
@@ -190,4 +195,67 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 
     public static bool operator !=(Outcome<T> left, Outcome<T> right) =>
         !(left == right);
+
+    #endregion
+}
+
+public static class OutcomeExtensions
+{
+    public static IEnumerable<Error> Errors<T>(this IEnumerable<Outcome<T>> collection) => collection
+        .Select(outcome => outcome.Error)
+        .OfType<Error>();
+
+
+    public static Outcome<Unit> ToUnit<T>(this Outcome<T> outcome) =>
+        outcome.IsSuccess
+            ? Outcome<Unit>.Success(new Unit())
+            : Outcome<Unit>.Failure(outcome.Error!);
+
+
+    public static Outcome<IEnumerable<T>> Sequence<T>(this IEnumerable<Outcome<T>> collection)
+    {
+        var list = collection.ToList();
+
+        if (list.Any(outcome => outcome.IsFailure))
+            return Outcome<IEnumerable<T>>.Failure<IEnumerable<T>>(list.Errors());
+
+        var values = list
+            .Select(outcome => outcome.Match<T?>(value => value, _ => default))
+            .OfType<T>();
+
+        return Outcome<IEnumerable<T>>.Success<IEnumerable<T>>(values);
+    }
+
+
+    public static Outcome<IEnumerable<TOutput>> Traverse<TOutput, TInput>(
+        this IEnumerable<TInput> collection,
+        Func<TInput, Outcome<TOutput>> func)
+    {
+        var values = new List<TOutput>();
+
+        foreach (var item in collection)
+        {
+            var result = func(item);
+
+            if (result.IsSuccess)
+            {
+                var value = result.Match(value => value, _ => default!);
+
+                values.Add(value);
+            }
+            else
+            {
+                var error = result switch
+                {
+                    { IsFailure: true } when result.Errors.Count() > 1 => Error.FromMany(result.Errors),
+                    { IsFailure: true } when result.Error!.IsExceptional => Error.FromException(result.Error!.Exception!),
+                    { IsFailure: true } when result.Error!.IsExceptional == false => Error.FromMessage(result.Error!.Message!),
+                    _ => throw new ArgumentOutOfRangeException(nameof(result), "Outcome was in an invalid state!")
+                };
+                return Outcome<IEnumerable<TOutput>>.Failure<IEnumerable<TOutput>>(error);
+            }
+        }
+
+        return Outcome<IEnumerable<TOutput>>.Success(values.AsEnumerable());
+    }
 }
