@@ -6,11 +6,6 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 {
     private T? Value { get; }
 
-    public bool Equals(Outcome<T> other)
-    {
-        throw new NotImplementedException();
-    }
-
 
     private Outcome(T? value, IEnumerable<Error> errors, bool isSuccess)
     {
@@ -101,4 +96,98 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
             return Failure<TResult>(Error.FromException(exception));
         }
     }
+
+
+    public Outcome<TResult> SelectMany<TResult>(Func<T, Outcome<TResult>> transform)
+    {
+        if (IsFailure)
+            return Failure<TResult>(Error!);
+
+        try
+        {
+            var outcome = transform(Value!);
+
+            return outcome;
+        }
+        catch (Exception exception)
+        {
+            return Failure<TResult>(Error.FromException(exception));
+        }
+    }
+
+
+    public void ForEach(Action<T> action)
+    {
+        if (IsFailure)
+            return;
+
+        action(Value!);
+    }
+
+
+    public static Outcome<T> Of(Func<T> transform)
+    {
+        try
+        {
+            var result = transform();
+
+            return Success(result);
+        }
+        catch (Exception exception)
+        {
+            return Failure(Error.FromException(exception));
+        }
+    }
+
+
+    public static Outcome<Unit> Of(Action action)
+    {
+        try
+        {
+            action();
+            return new Unit();
+        }
+        catch (Exception exception)
+        {
+            return Error.FromException(exception);
+        }
+    }
+
+
+    public TResult Match<TResult>(Func<T, TResult> success, Func<Error, TResult> failure) =>
+        IsFailure ? failure(Error!) : success(Value!);
+
+
+    public Outcome<T> Also(Action action)
+    {
+        action();
+        return this;
+    }
+
+
+    [Obsolete("Nulls? Where we're going we don't need nulls. ~Doc Brown (paraphrased - please don't use this method)", false)]
+    public T? GetValueOrDefault() =>
+        IsSuccess ? Value : default;
+
+
+    public bool Equals(Outcome<T> other) =>
+        EqualityComparer<T?>.Default.Equals(Value, other.Value)
+        && Errors.Equals(other.Errors)
+        && IsSuccess == other.IsSuccess;
+
+
+    public override bool Equals(object? obj) =>
+        obj is Outcome<T> other && Equals(other);
+
+
+    public override int GetHashCode() =>
+        HashCode.Combine(Value, Errors, IsSuccess);
+
+
+    public static bool operator ==(Outcome<T> left, Outcome<T> right) =>
+        left.Equals(right);
+
+
+    public static bool operator !=(Outcome<T> left, Outcome<T> right) =>
+        !(left == right);
 }
