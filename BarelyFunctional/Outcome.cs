@@ -99,8 +99,8 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         Failure(error);
 
 
-    public static implicit operator Outcome<T>(T t) =>
-        Success(t);
+    public static implicit operator Outcome<T>(T value) =>
+        Success(value);
 
 
     public static implicit operator T(Outcome<T> outcome) =>
@@ -125,7 +125,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         }
         catch (Exception exception)
         {
-            return Failure<TResult>(Error.FromException(exception));
+            return Failure<TResult>(exception);
         }
     }
 
@@ -143,7 +143,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         }
         catch (Exception exception)
         {
-            return Failure<TResult>(Error.FromException(exception));
+            return Failure<TResult>(exception);
         }
     }
 
