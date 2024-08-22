@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Extract version
+        id: getversion
+        run: |
+          Get-ChildItem 
+          $xml = [xml](Get-Content BarelyFunctional/BarelyFunctional.csproj)
+          $version = $xml.Project.PropertyGroup.Version
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$version"
+        shell: pwsh
+        
+      - name: Check version
+        id: checkversion
+        continue-on-error: true
+        run: |
+          pwsh ./.github/scripts/CheckVersion.ps1 -githubRepository ${{ github.repository }} -version $env:VERSION -accessToken $env:ACCESS_TOKEN
+        shell: pwsh
+        env:
+          VERSION: ${{ env.VERSION }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup NuGet.exe for use with actions
+        uses: NuGet/setup-nuget@v2
+
+      - name: Configure github packages as nuget source
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          $uri = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          dotnet nuget add source --username ${{ github.actor }} --password $env:ACCESS_TOKEN --store-password-in-clear-text --name github $uri
+          
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal

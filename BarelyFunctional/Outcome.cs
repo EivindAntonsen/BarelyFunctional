@@ -1,5 +1,4 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-// ReSharper disable MemberCanBePrivate.Global
+﻿// ReSharper disable MemberCanBePrivate.Global
 
 namespace BarelyFunctional;
 
@@ -65,6 +64,10 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 
     public static Outcome<TResult> Failure<TResult>(IEnumerable<Error>? errors) =>
         new(default, errors ?? [], false);
+
+
+    public static Outcome<T> Of(T value) => 
+        Success(value);
 
     public static Outcome<T> Of(Func<T> transform)
     {
@@ -147,6 +150,18 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         }
     }
 
+    public Outcome<T> Where(Predicate<T> predicate) => this switch
+    {
+        _ when IsFailure => 
+            Failure<T>(Error!),
+        _ when IsSuccess && predicate(Value!) => 
+            Success<T>(Value!),
+        _ when IsSuccess && !predicate(Value!) => 
+            Failure<T>("Although the Outcome was a success, its value did not match the provided predicate."),
+        _ => 
+            throw new ArgumentOutOfRangeException()
+    };
+
 
     public void ForEach(Action<T> action)
     {
@@ -166,11 +181,6 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         action();
         return this;
     }
-
-
-    [Obsolete("Nulls? Where we're going we don't need nulls. ~Doc Brown (paraphrased - please don't use this method)", false)]
-    public T? GetValueOrDefault() =>
-        IsSuccess ? Value : default;
 
     #endregion
 
@@ -249,8 +259,10 @@ public static class OutcomeExtensions
                 var error = result switch
                 {
                     { IsFailure: true } when result.Errors.Count() > 1 => Error.FromMany(result.Errors),
-                    { IsFailure: true } when result.Error!.IsExceptional => Error.FromException(result.Error!.Exception!),
-                    { IsFailure: true } when result.Error!.IsExceptional == false => Error.FromMessage(result.Error!.Message!),
+                    { IsFailure: true } when result.Error!.IsExceptional => Error.FromException(
+                        result.Error!.Exception!),
+                    { IsFailure: true } when result.Error!.IsExceptional == false => Error.FromMessage(
+                        result.Error!.Message!),
                     _ => throw new ArgumentOutOfRangeException(nameof(result), "Outcome was in an invalid state!")
                 };
                 return Outcome<IEnumerable<TOutput>>.Failure<IEnumerable<TOutput>>(error);
