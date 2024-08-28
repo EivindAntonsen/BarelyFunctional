@@ -124,7 +124,9 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         {
             var mappedValue = transform(Value!);
 
-            return Success(mappedValue);
+            return mappedValue is null 
+                ? Failure<TResult>("The function returned a null value.") 
+                : Success(mappedValue);
         }
         catch (Exception exception)
         {
