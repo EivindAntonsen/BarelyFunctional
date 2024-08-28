@@ -124,8 +124,8 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         {
             var mappedValue = transform(Value!);
 
-            return mappedValue is null 
-                ? Failure<TResult>("The function returned a null value.") 
+            return mappedValue is null
+                ? Failure<TResult>("The function returned a null value.")
                 : Success(mappedValue);
         }
         catch (Exception exception)
@@ -175,7 +175,14 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 
 
     public TResult Match<TResult>(Func<T, TResult> success, Func<Error, TResult> failure) =>
-        IsFailure ? failure(Error!) : success(Value!);
+        IsFailure
+            ? failure(Error!)
+            : success(Value!);
+
+    public Outcome<T> SelectError(Func<Error, Error> transform) =>
+        IsFailure
+            ? Failure(transform(Error!))
+            : this;
 
 
     public Outcome<T> Also(Action action)
@@ -183,8 +190,6 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         action();
         return this;
     }
-
-    
 
     #endregion
 
