@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B0D23832-936A-4D5A-AA1D-A3C836C8EE68}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.github\scripts\CheckVersion.ps1 = .github\scripts\CheckVersion.ps1
 		.github\workflows\Release.yaml = .github\workflows\Release.yaml
 	EndProjectSection
 EndProject
