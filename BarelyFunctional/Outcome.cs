@@ -174,6 +174,12 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     }
 
 
+    public TResult Apply<TResult>(Func<Outcome<T>, TResult> func)
+    {
+        return func(this);
+    }
+
+
     public TResult Match<TResult>(Func<T, TResult> success, Func<Error, TResult> failure) =>
         IsFailure
             ? failure(Error!)
