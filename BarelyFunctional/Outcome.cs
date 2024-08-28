@@ -165,12 +165,12 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     };
 
 
-    public void ForEach(Action<T> action)
+    public Outcome<T> ForEach(Action<T> action)
     {
-        if (IsFailure)
-            return;
+        if (IsSuccess)
+            action(Value!);
 
-        action(Value!);
+        return this;
     }
 
 
