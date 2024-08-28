@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    environment: Production
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
