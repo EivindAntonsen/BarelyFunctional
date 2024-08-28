@@ -9,22 +9,19 @@ public record Error
     {
         Exception = exception;
         Message = errorMessage;
-        _errors = errors ?? [];
+        Errors = errors ?? [];
     }
 
 
-    private readonly IEnumerable<Error> _errors;
-
-
     public bool IsExceptional =>
-        Exception is not null || Errors.Any(error => error.IsExceptional) == true;
+        Exception is not null || Errors.Any(error => error.IsExceptional);
 
 
     public Exception? Exception { get; }
 
     public string? Message { get; }
 
-    public IEnumerable<Error> Errors => _errors ?? [];
+    public IEnumerable<Error> Errors { get; }
 
 
     public static Error FromException(Exception exception) =>
