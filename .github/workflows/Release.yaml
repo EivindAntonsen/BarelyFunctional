@@ -53,5 +53,8 @@ jobs:
       - name: Pack
         run: dotnet pack --no-build --configuration Release --output ./nupkg
 
+      - name: List package files
+        run: Get-ChildItem ./nupkg
+
       - name: Publish to NuGet
         run: nuget push ./nupkg/*.nupkg -NonInteractive -ApiKey ${{ secrets.NUGET_API_KEY }} -Source https://api.nuget.org/v3/index.json
