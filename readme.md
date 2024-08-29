@@ -9,6 +9,10 @@ Outcome<T> is a monadic container that can hold either a value of type T or an e
 The Outcome will be in either a Success or Failure state. If it is in a Success state, it will contain a value of type T. If it is in a Failure state, it will contain an error.
 Methods can be chained with methods like `Select()`, `SelectMany()`, `Traverse()`, and any errors occurring will shortcircuit the chain and return an Outcome in a failure state with the error information.
 
+## Installation
+The project exists on nuget: https://www.nuget.org/packages/BarelyFunctional
+It can be installed through your package manager of choice.
+
 ## Why create yet another functional library?
 I wanted to create a minimal functional library that was easy to understand and use.
 I found that many functional libraries for C# were too complex or had too many features that I didn't need. 
