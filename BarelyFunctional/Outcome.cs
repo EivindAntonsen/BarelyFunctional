@@ -73,9 +73,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     {
         try
         {
-            var result = transform();
-
-            return result;
+            return transform();
         }
         catch (Exception exception)
         {
@@ -100,9 +98,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     {
         try
         {
-            var result = transform(disposable);
-
-            return result;
+            return transform(disposable);
         }
         catch (Exception exception)
         {
@@ -156,11 +152,11 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 
         try
         {
-            var mappedValue = transform(Value!);
+            var transformedValue = transform(Value!);
 
-            return mappedValue is null
+            return transformedValue is null
                 ? Failure<TResult>("The function returned a null value.")
-                : Success(mappedValue);
+                : Success(transformedValue);
         }
         catch (Exception exception)
         {
@@ -176,9 +172,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 
         try
         {
-            var outcome = transform(Value!);
-
-            return outcome;
+            return transform(Value!);
         }
         catch (Exception exception)
         {
@@ -188,14 +182,14 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 
     public Outcome<T> Where(Predicate<T> predicate) => this switch
     {
-        _ when IsFailure =>
-            Failure<T>(Error!),
-        _ when IsSuccess && predicate(Value!) =>
-            Success<T>(Value!),
-        _ when IsSuccess && !predicate(Value!) =>
-            Failure<T>("Although the Outcome was a success, its value did not match the provided predicate."),
-        _ =>
-            throw new ArgumentOutOfRangeException()
+        { IsFailure: true }
+            => Failure<T>(Error!),
+        { IsSuccess: true } when predicate(Value!)
+            => Success<T>(Value!),
+        { IsSuccess: true }
+            => Failure<T>("Although the Outcome was a success, its value did not match the provided predicate."),
+        _
+            => throw new ArgumentOutOfRangeException()
     };
 
 
@@ -208,10 +202,8 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     }
 
 
-    public TResult Apply<TResult>(Func<Outcome<T>, TResult> func)
-    {
-        return func(this);
-    }
+    public TResult Apply<TResult>(Func<Outcome<T>, TResult> func) =>
+        func(this);
 
 
     public TResult Match<TResult>(Func<T, TResult> success, Func<Error, TResult> failure) =>
@@ -268,7 +260,7 @@ public static class OutcomeExtensions
 
     public static Outcome<Unit> ToUnit<T>(this Outcome<T> outcome) =>
         outcome.IsSuccess
-            ? Outcome<Unit>.Success(new Unit())
+            ? Outcome<Unit>.Success()
             : Outcome<Unit>.Failure(outcome.Error!);
 
 
