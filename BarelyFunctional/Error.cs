@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace BarelyFunctional;

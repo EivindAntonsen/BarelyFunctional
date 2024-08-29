@@ -75,14 +75,13 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         {
             var result = transform();
 
-            return Success(result);
+            return result;
         }
         catch (Exception exception)
         {
-            return Failure(Error.FromException(exception));
+            return Error.FromException(exception);
         }
     }
-
 
     public static Outcome<Unit> Of(Action action)
     {
@@ -94,6 +93,41 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         catch (Exception exception)
         {
             return Error.FromException(exception);
+        }
+    }
+
+    public static Outcome<T> OfDisposable(IDisposable disposable, Func<IDisposable, T> transform)
+    {
+        try
+        {
+            var result = transform(disposable);
+
+            return result;
+        }
+        catch (Exception exception)
+        {
+            return Error.FromException(exception);
+        }
+        finally
+        {
+            disposable.Dispose();
+        }
+    }
+
+    public static Outcome<Unit> OfDisposable(IDisposable disposable, Action<IDisposable> action)
+    {
+        try
+        {
+            action(disposable);
+            return new Unit();
+        }
+        catch (Exception exception)
+        {
+            return Error.FromException(exception);
+        }
+        finally
+        {
+            disposable.Dispose();
         }
     }
 

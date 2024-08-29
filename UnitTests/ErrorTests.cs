@@ -1,5 +1,4 @@
 using BarelyFunctional;
-using System;
 
 namespace UnitTests;
 
@@ -9,7 +8,7 @@ public class ErrorTests
     [Test]
     public void FromException_ShouldCreateError_WithOnlyException()
     {
-        var exception = new ArgumentNullException();
+        var exception = new ArgumentNullException("blegh");
         var error = Error.FromException(exception);
 
         Assert.Multiple(() =>
