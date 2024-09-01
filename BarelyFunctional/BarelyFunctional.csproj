@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<PackageId>BarelyFunctional</PackageId>
-		<Version>1.0.7</Version>
+		<Version>1.0.8</Version>
 		<Authors>Eivind Antonsen</Authors>
 		<Description>A tiny, bare bones functional library for C#</Description>
 		<RepositoryUrl>https://github.com/EivindAntonsen/BarelyFunctional</RepositoryUrl>
