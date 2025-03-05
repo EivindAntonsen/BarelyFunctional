@@ -94,38 +94,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         }
     }
 
-    public static Outcome<T> OfDisposable(IDisposable disposable, Func<IDisposable, T> transform)
-    {
-        try
-        {
-            return transform(disposable);
-        }
-        catch (Exception exception)
-        {
-            return Error.FromException(exception);
-        }
-        finally
-        {
-            disposable.Dispose();
-        }
-    }
 
-    public static Outcome<Unit> OfDisposable(IDisposable disposable, Action<IDisposable> action)
-    {
-        try
-        {
-            action(disposable);
-            return new Unit();
-        }
-        catch (Exception exception)
-        {
-            return Error.FromException(exception);
-        }
-        finally
-        {
-            disposable.Dispose();
-        }
-    }
 
 
     public static implicit operator Outcome<T>(Error error) =>

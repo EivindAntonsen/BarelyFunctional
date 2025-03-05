@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<PackageId>BarelyFunctional</PackageId>
@@ -11,6 +11,7 @@
 		<RepositoryUrl>https://github.com/EivindAntonsen/BarelyFunctional</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/EivindAntonsen/BarelyFunctional</PackageProjectUrl>
+		<LangVersion>14</LangVersion>
 	</PropertyGroup>
 
 </Project>
