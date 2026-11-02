@@ -10,7 +10,7 @@ public static class Extensions
     public static Outcome<Unit> ToUnit<T>(this Outcome<T> outcome) =>
         outcome.IsSuccess
             ? Outcome<Unit>.Success()
-            : Outcome<Unit>.Failure(outcome.Error!);
+            : Outcome<Unit>.Failure(outcome.Errors);
     
     /// <summary>
     /// Takes a collection of outcomes and returns an outcome that represents the result of the sequence operation.
@@ -28,13 +28,13 @@ public static class Extensions
         var list = collection.ToList();
     
         if (list.Any(outcome => outcome.IsFailure))
-            return Outcome<IEnumerable<T>>.Failure<IEnumerable<T>>(list.Errors());
+            return Outcome<IEnumerable<T>>.Failure(list.Errors());
     
         var values = list
             .Select(outcome => outcome.Match<T?>(value => value, _ => default))
             .OfType<T>();
     
-        return Outcome<IEnumerable<T>>.Success<IEnumerable<T>>(values);
+        return Outcome<IEnumerable<T>>.Success(values);
     }
     
     
@@ -48,42 +48,12 @@ public static class Extensions
     /// <returns>
     /// An outcome that represents the result of the traversal.
     /// If all elements in the collection were successfully transformed, the outcome will contain a collection of the transformed values.
-    /// If any element fails the transformation, the outcome will contain an error indicating the failure.
+    /// If any element fails the transformation, the outcome will aggregate all the errors, consistent with <see cref="Sequence{T}"/>.
     /// </returns>
     public static Outcome<IEnumerable<TOutput>> Traverse<TOutput, TInput>(
         this IEnumerable<TInput> collection,
-        Func<TInput, Outcome<TOutput>> func)
-    {
-        var values = new List<TOutput>();
-    
-        foreach (var item in collection)
-        {
-            var result = func(item);
-    
-            if (result.IsSuccess)
-            {
-                var value = result.Match(value => value, _ => default!);
-    
-                values.Add(value);
-            }
-            else
-            {
-                var error = result switch
-                {
-                    { IsFailure: true } when result.Errors.Count() > 1
-                        => Error.FromMany(result.Errors),
-                    { IsFailure: true } when result.Error!.IsExceptional
-                        => Error.FromException(result.Error!.Exception!),
-                    { IsFailure: true } when result.Error!.IsExceptional == false
-                        => Error.FromMessage(result.Error!.Message!),
-                    _
-                        => throw new ArgumentOutOfRangeException(nameof(result), "Outcome was in an invalid state!")
-                };
-    
-                return Outcome<IEnumerable<TOutput>>.Failure<IEnumerable<TOutput>>(error);
-            }
-        }
-    
-        return Outcome<IEnumerable<TOutput>>.Success(values.AsEnumerable());
-    }
+        Func<TInput, Outcome<TOutput>> func) =>
+        collection
+            .Select(func)
+            .Sequence();
 }

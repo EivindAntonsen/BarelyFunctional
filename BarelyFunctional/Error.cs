@@ -42,4 +42,24 @@ public record Error
 
     public static implicit operator Error(Exception exception) =>
         FromException(exception);
+
+
+    public virtual bool Equals(Error? other) =>
+        other is not null
+        && EqualityComparer<Exception?>.Default.Equals(Exception, other.Exception)
+        && Message == other.Message
+        && Errors.SequenceEqual(other.Errors);
+
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Exception);
+        hash.Add(Message);
+
+        foreach (var error in Errors)
+            hash.Add(error);
+
+        return hash.ToHashCode();
+    }
 }
