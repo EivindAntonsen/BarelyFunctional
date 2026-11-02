@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<PackageId>BarelyFunctional</PackageId>
-		<Version>1.1.1</Version>
+		<Version>1.2.0</Version>
 		<Authors>Eivind Antonsen</Authors>
 		<Description>A tiny, bare bones functional library for C#</Description>
 		<RepositoryUrl>https://github.com/EivindAntonsen/BarelyFunctional</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/EivindAntonsen/BarelyFunctional</PackageProjectUrl>
-		<LangVersion>12</LangVersion>
+		<LangVersion>14</LangVersion>
 	</PropertyGroup>
 
 </Project>

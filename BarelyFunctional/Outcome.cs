@@ -6,7 +6,8 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 {
     private T? Value { get; }
 
-    public IEnumerable<Error> Errors { get; } = [];
+    public IEnumerable<Error> Errors =>
+        field ?? [];
 
     public bool IsSuccess { get; }
 
@@ -14,13 +15,13 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         !IsSuccess;
 
     public Error? Error =>
-        Errors?.FirstOrDefault();
+        Errors.FirstOrDefault();
 
 
-    private Outcome(T? value, IEnumerable<Error> errors, bool isSuccess)
+    private Outcome(T? value, IEnumerable<Error>? errors, bool isSuccess)
     {
         Value = value;
-        Errors = errors;
+        Errors = errors is null ? [] : [..errors];
         IsSuccess = isSuccess;
     }
 
@@ -34,14 +35,6 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     }
 
 
-    public static Outcome<TResult> Success<TResult>(TResult value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        return new Outcome<TResult>(value, [], true);
-    }
-
-
     public static Outcome<T> Failure(Error error)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -50,19 +43,11 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     }
 
 
-    public static Outcome<TResult> Failure<TResult>(Error error)
-    {
-        ArgumentNullException.ThrowIfNull(error);
-
-        return new Outcome<TResult>(default, [error], false);
-    }
-
-
     public static Outcome<Unit> Success() =>
         new(new Unit(), [], true);
 
 
-    public static Outcome<TResult> Failure<TResult>(IEnumerable<Error>? errors) =>
+    public static Outcome<T> Failure(IEnumerable<Error>? errors) =>
         new(default, errors ?? [], false);
 
 
@@ -105,11 +90,6 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         Success(value);
 
 
-    public static implicit operator T(Outcome<T> outcome) =>
-        outcome.IsSuccess
-            ? outcome.Value!
-            : throw new InvalidCastException("Outcome is not in a success state!");
-
     #endregion
 
     #region Methods
@@ -117,19 +97,19 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     public Outcome<TResult> Select<TResult>(Func<T, TResult> transform)
     {
         if (IsFailure)
-            return Failure<TResult>(Error!);
+            return Outcome<TResult>.Failure(Errors);
 
         try
         {
             var transformedValue = transform(Value!);
 
             return transformedValue is null
-                ? Failure<TResult>("The function returned a null value.")
-                : Success(transformedValue);
+                ? Outcome<TResult>.Failure("The function returned a null value.")
+                : Outcome<TResult>.Success(transformedValue);
         }
         catch (Exception exception)
         {
-            return Failure<TResult>(exception);
+            return Outcome<TResult>.Failure(exception);
         }
     }
 
@@ -137,7 +117,7 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
     public Outcome<TResult> SelectMany<TResult>(Func<T, Outcome<TResult>> transform)
     {
         if (IsFailure)
-            return Failure<TResult>(Error!);
+            return Outcome<TResult>.Failure(Errors);
 
         try
         {
@@ -145,18 +125,18 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
         }
         catch (Exception exception)
         {
-            return Failure<TResult>(exception);
+            return Outcome<TResult>.Failure(exception);
         }
     }
 
     public Outcome<T> Where(Predicate<T> predicate) => this switch
     {
         { IsFailure: true }
-            => Failure<T>(Error!),
+            => Failure(Errors),
         { IsSuccess: true } when predicate(Value!)
-            => Success<T>(Value!),
+            => Success(Value!),
         { IsSuccess: true }
-            => Failure<T>("Although the Outcome was a success, its value did not match the provided predicate."),
+            => Failure("Although the Outcome was a success, its value did not match the provided predicate."),
         _
             => throw new ArgumentOutOfRangeException()
     };
@@ -198,16 +178,25 @@ public readonly struct Outcome<T> : IEquatable<Outcome<T>>
 
     public bool Equals(Outcome<T> other) =>
         EqualityComparer<T?>.Default.Equals(Value, other.Value)
-        && Errors.Equals(other.Errors)
-        && IsSuccess == other.IsSuccess;
+        && IsSuccess == other.IsSuccess
+        && Errors.SequenceEqual(other.Errors);
 
 
     public override bool Equals(object? obj) =>
         obj is Outcome<T> other && Equals(other);
 
 
-    public override int GetHashCode() =>
-        HashCode.Combine(Value, Errors, IsSuccess);
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Value);
+        hash.Add(IsSuccess);
+
+        foreach (var error in Errors)
+            hash.Add(error);
+
+        return hash.ToHashCode();
+    }
 
 
     public static bool operator ==(Outcome<T> left, Outcome<T> right) =>
